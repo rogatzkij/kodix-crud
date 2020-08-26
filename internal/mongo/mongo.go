@@ -101,7 +101,37 @@ func (c *Connector) DeleteBrand(brandname string) error {
 }
 
 func (c *Connector) DeleteModel(brandname, automodel string) error {
-	panic("implement me")
+	isExistBrand, err := c.CheckBrand(brandname)
+	if err != nil {
+		return err
+	}
+	if !isExistBrand {
+		return model.ErrBrandDoesntAlreadyExist
+	}
+
+	isExistModel, err := c.CheckModel(brandname, automodel)
+	if err != nil {
+		return err
+	}
+	if !isExistModel {
+		return model.ErrAutomodelDoesntAlreadyExist
+	}
+
+	db := c.database
+	collBrand := db.Collection(collectionBrand)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	_, err = collBrand.UpdateOne(ctx,
+		bson.D{{"brandname", brandname}},
+		bson.M{"$pull": bson.M{"automodels": automodel}},
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *Connector) CheckBrand(brandname string) (bool, error) {

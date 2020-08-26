@@ -111,6 +111,14 @@ func (hs *handlerStore) createModelHandler(w http.ResponseWriter, r *http.Reques
 }
 
 func (hs *handlerStore) deleteModelHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-	w.Write([]byte("deleteModelHandler isn't implemented"))
+	brandname := mux.Vars(r)["brandname"]
+	automodel := mux.Vars(r)["automodel"]
+
+	err := hs.core.Brand.DeleteModel(brandname, automodel)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
