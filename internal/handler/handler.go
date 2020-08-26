@@ -5,6 +5,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rogatzkij/kodix-crud/internal/core"
 	"github.com/rogatzkij/kodix-crud/model"
+	"github.com/rs/zerolog/log"
 	"io/ioutil"
 	"net/http"
 )
@@ -20,6 +21,7 @@ func NewRouter(core *core.Core) *mux.Router {
 
 	majorRouter := mux.NewRouter()
 	majorRouter.StrictSlash(true)
+	majorRouter.Use(LogMiddleware)
 
 	apiRouter := majorRouter.PathPrefix("/api/v1").Subrouter()
 
@@ -39,6 +41,19 @@ func NewRouter(core *core.Core) *mux.Router {
 	brandRouter.HandleFunc("/{brandname}/models/{automodel}", hs.deleteModelHandler).Methods(http.MethodDelete)
 
 	return majorRouter
+}
+
+func LogMiddleware(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Info().
+			Str("path", r.URL.Path).
+			Str("method", r.Method).
+			Str("remote addr", r.RemoteAddr).
+			Str("user agent", r.UserAgent()).
+			Msg("Поступил запрос")
+
+		h.ServeHTTP(w, r)
+	})
 }
 
 func (hs *handlerStore) readAutoHandler(w http.ResponseWriter, r *http.Request) {
