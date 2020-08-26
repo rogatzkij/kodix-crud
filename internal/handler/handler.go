@@ -1,8 +1,11 @@
 package handler
 
 import (
+	"encoding/json"
 	"github.com/gorilla/mux"
 	"github.com/rogatzkij/kodix-crud/internal/core"
+	"github.com/rogatzkij/kodix-crud/model"
+	"io/ioutil"
 	"net/http"
 )
 
@@ -59,8 +62,27 @@ func (hs *handlerStore) deleteAutoHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (hs *handlerStore) createBrandHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-	w.Write([]byte("createBrandHandler isn't implemented"))
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	brand := &model.Brand{}
+	err = json.Unmarshal(body, brand)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	err = hs.core.Brand.CreateBrand(*brand)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (hs *handlerStore) deleteBrandHandler(w http.ResponseWriter, r *http.Request) {

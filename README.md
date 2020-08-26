@@ -11,3 +11,15 @@
 
 ## О реализации
 * при составлении структуры проекта опирался на [Standard Go Project Layout](https://github.com/golang-standards/project-layout)
+
+## Проверка
+
+### Создание бренда
+
+~~~sh
+curl --location --request POST '127.0.0.1:8080/api/v1/brands/' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "brandname": "kia"
+}'
+~~~
