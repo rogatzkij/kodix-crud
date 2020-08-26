@@ -113,6 +113,10 @@ func (c *Connector) CreateBrand(brand model.Brand) error {
 		return model.ErrBrandAlreadyExist
 	}
 
+	if brand.Models == nil {
+		brand.Models = []string{}
+	}
+
 	db := c.database
 	collBrand := db.Collection(collectionBrand)
 
