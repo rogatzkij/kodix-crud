@@ -83,7 +83,7 @@ func (c *Connector) DeleteBrand(brandname string) error {
 		return err
 	}
 	if !isExist {
-		return model.ErrBrandDoesntAlreadyExist
+		return model.ErrBrandDoesntExist
 	}
 
 	db := c.database
@@ -106,7 +106,7 @@ func (c *Connector) DeleteModel(brandname, automodel string) error {
 		return err
 	}
 	if !isExistBrand {
-		return model.ErrBrandDoesntAlreadyExist
+		return model.ErrBrandDoesntExist
 	}
 
 	isExistModel, err := c.CheckModel(brandname, automodel)
@@ -114,7 +114,7 @@ func (c *Connector) DeleteModel(brandname, automodel string) error {
 		return err
 	}
 	if !isExistModel {
-		return model.ErrAutomodelDoesntAlreadyExist
+		return model.ErrAutomodelDoesntExist
 	}
 
 	db := c.database
@@ -164,7 +164,7 @@ func (c *Connector) CreateModel(brandname, automodel string) error {
 		return err
 	}
 	if !isExistBrand {
-		return model.ErrBrandDoesntAlreadyExist
+		return model.ErrBrandDoesntExist
 	}
 
 	isExistModel, err := c.CheckModel(brandname, automodel)
@@ -198,7 +198,7 @@ func (c *Connector) CheckModel(brandname, automodel string) (bool, error) {
 		return false, err
 	}
 	if !isExist {
-		return false, model.ErrBrandDoesntAlreadyExist
+		return false, model.ErrBrandDoesntExist
 	}
 
 	db := c.database
@@ -227,14 +227,14 @@ func (c *Connector) Create(auto model.Auto) (uint, error) {
 	panic("implement me")
 }
 
-func (c *Connector) GetByID(id uint) (model.Auto, error) {
+func (c *Connector) GetAutoByID(id uint) (model.Auto, error) {
 	panic("implement me")
 }
 
-func (c *Connector) UpdateByID(id uint, auto model.Auto) error {
+func (c *Connector) UpdateAutoByID(id uint, auto model.Auto) error {
 	panic("implement me")
 }
 
-func (c *Connector) DeleteByID(id uint) error {
+func (c *Connector) DeleteAutoByID(id uint) error {
 	panic("implement me")
 }
