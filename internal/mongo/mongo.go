@@ -100,7 +100,7 @@ func (c *Connector) DeleteBrand(brandname string) error {
 	return nil
 }
 
-func (c *Connector) DeleteModel(brandname, model string) error {
+func (c *Connector) DeleteModel(brandname, automodel string) error {
 	panic("implement me")
 }
 
@@ -132,8 +132,35 @@ func (c *Connector) CreateModel(brand, model string) error {
 	panic("implement me")
 }
 
-func (c *Connector) CheckModel(brand, model string) (bool, error) {
-	panic("implement me")
+func (c *Connector) CheckModel(brandname, automodel string) (bool, error) {
+	isExist, err := c.CheckBrand(brandname)
+	if err != nil {
+		return false, err
+	}
+	if !isExist {
+		return false, model.ErrBrandDoesntAlreadyExist
+	}
+
+	db := c.database
+	collBrand := db.Collection(collectionBrand)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	sRes := collBrand.FindOne(ctx,
+		bson.D{
+			{"brandname", brandname},
+			{"automodels", automodel},
+		},
+	)
+	switch sRes.Err() {
+	case nil:
+		return true, nil
+	case mongo.ErrNoDocuments:
+		return false, nil
+	default:
+		return false, sRes.Err()
+	}
 }
 
 func (c *Connector) Create(auto model.Auto) (uint, error) {
