@@ -28,6 +28,7 @@ func NewRouter(core *core.Core) *mux.Router {
 
 	// /api/v1/autos
 	autoRouter := apiRouter.PathPrefix("/autos").Subrouter()
+	autoRouter.HandleFunc("/", hs.readAutosHandler).Methods(http.MethodGet)
 	autoRouter.HandleFunc("/", hs.createAutoHandler).Methods(http.MethodPost)
 	autoRouter.HandleFunc("/{auto_id}", hs.readAutoByIDHandler).Methods(http.MethodGet)
 	autoRouter.HandleFunc("/{auto_id}", hs.updateAutoHandler).Methods(http.MethodPut)
@@ -55,6 +56,43 @@ func LogMiddleware(h http.Handler) http.Handler {
 
 		h.ServeHTTP(w, r)
 	})
+}
+
+func (hs *handlerStore) readAutosHandler(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var offset uint64 = 0
+	var limit uint64 = 10
+
+	if param := r.URL.Query().Get("limit"); param != "" {
+		limit, err = strconv.ParseUint(param, 10, 64)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	}
+
+	if param := r.URL.Query().Get("offset"); param != "" {
+		offset, err = strconv.ParseUint(param, 10, 64)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	}
+
+	autos, err := hs.core.Auto.GetAutos(uint(limit), uint(offset))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	body, err := json.Marshal(autos)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(body)
 }
 
 func (hs *handlerStore) readAutoByIDHandler(w http.ResponseWriter, r *http.Request) {

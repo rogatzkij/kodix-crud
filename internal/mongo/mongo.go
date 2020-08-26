@@ -55,6 +55,48 @@ func (c *Connector) Close() error {
 	return c.client.Disconnect(ctx)
 }
 
+func (c *Connector) GetAutos(limit, offset uint) ([]model.Auto, error) {
+	// Ленивая инициализация коннектора БД
+	if c.client == nil {
+		if err := c.Connect(); err != nil {
+			return nil, err
+		}
+	}
+
+	collAutos := c.database.Collection(collectionAuto)
+
+	opts := options.Find()
+	opts.SetLimit(int64(limit))
+	opts.SetSkip(int64(offset))
+	opts.SetSort(bson.D{{"_id", 1}})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var autos []model.Auto
+
+	cursor, err := collAutos.Find(ctx, bson.D{}, opts)
+	if err != nil {
+		return autos, err
+	}
+
+	ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	for cursor.Next(ctx) {
+		auto := model.Auto{}
+
+		err = cursor.Decode(&auto)
+		if err != nil {
+			return nil, err
+		}
+
+		autos = append(autos, auto)
+	}
+
+	return autos, nil
+}
+
 func (c *Connector) CreateBrand(brand model.Brand) error {
 	// Ленивая инициализация коннектора БД
 	if c.client == nil {
