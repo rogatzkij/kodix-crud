@@ -8,6 +8,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 )
 
 type handlerStore struct {
@@ -27,8 +28,8 @@ func NewRouter(core *core.Core) *mux.Router {
 
 	// /api/v1/autos
 	autoRouter := apiRouter.PathPrefix("/autos").Subrouter()
-	autoRouter.HandleFunc("/", hs.readAutoHandler).Methods(http.MethodGet)
 	autoRouter.HandleFunc("/", hs.createAutoHandler).Methods(http.MethodPost)
+	autoRouter.HandleFunc("/{auto_id}", hs.readAutoByIDHandler).Methods(http.MethodGet)
 	autoRouter.HandleFunc("/{auto_id}", hs.updateAutoHandler).Methods(http.MethodPut)
 	autoRouter.HandleFunc("/{auto_id}", hs.deleteAutoHandler).Methods(http.MethodDelete)
 
@@ -56,24 +57,97 @@ func LogMiddleware(h http.Handler) http.Handler {
 	})
 }
 
-func (hs *handlerStore) readAutoHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-	w.Write([]byte("readAutoHandler isn't implemented"))
+func (hs *handlerStore) readAutoByIDHandler(w http.ResponseWriter, r *http.Request) {
+	autoID, err := strconv.ParseUint(mux.Vars(r)["auto_id"], 10, 64)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	auto, err := hs.core.Auto.GetAutoByID(uint(autoID))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	body, err := json.Marshal(auto)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(body)
 }
 
 func (hs *handlerStore) createAutoHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-	w.Write([]byte("createAutoHandler isn't implemented"))
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	auto := &model.Auto{}
+	err = json.Unmarshal(body, auto)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	_, err = hs.core.Auto.CreateAuto(*auto)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (hs *handlerStore) updateAutoHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-	w.Write([]byte("updateAutoHandler isn't implemented"))
+	autoID, err := strconv.ParseUint(mux.Vars(r)["auto_id"], 10, 64)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	auto := &model.Auto{}
+	err = json.Unmarshal(body, auto)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	err = hs.core.Auto.UpdateAutoByID(uint(autoID), *auto)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (hs *handlerStore) deleteAutoHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-	w.Write([]byte("deleteAutoHandler isn't implemented"))
+	autoID, err := strconv.ParseUint(mux.Vars(r)["auto_id"], 10, 64)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	err = hs.core.Auto.DeleteAutoByID(uint(autoID))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (hs *handlerStore) createBrandHandler(w http.ResponseWriter, r *http.Request) {

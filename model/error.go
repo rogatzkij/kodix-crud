@@ -10,4 +10,6 @@ var (
 	ErrAutomodelDoesntExist  = errors.New("the model doesn't exist")
 
 	ErrBrandOrModelDoesntExist = errors.New("the brand or the model doesn't exist")
+
+	ErrWrongStatus = errors.New("the status is wrong")
 )
