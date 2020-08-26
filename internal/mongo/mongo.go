@@ -77,6 +77,33 @@ func (c *Connector) CreateBrand(brand model.Brand) error {
 	return nil
 }
 
+func (c *Connector) DeleteBrand(brandname string) error {
+	isExist, err := c.CheckBrand(brandname)
+	if err != nil {
+		return err
+	}
+	if !isExist {
+		return model.ErrBrandDoesntAlreadyExist
+	}
+
+	db := c.database
+	collBrand := db.Collection(collectionBrand)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	_, err = collBrand.DeleteOne(ctx, bson.D{{"brandname", brandname}})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Connector) DeleteModel(brandname, model string) error {
+	panic("implement me")
+}
+
 func (c *Connector) CheckBrand(brandname string) (bool, error) {
 	if c.client == nil {
 		if err := c.Connect(); err != nil {
