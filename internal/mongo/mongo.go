@@ -128,8 +128,38 @@ func (c *Connector) CheckBrand(brandname string) (bool, error) {
 	}
 }
 
-func (c *Connector) CreateModel(brand, model string) error {
-	panic("implement me")
+func (c *Connector) CreateModel(brandname, automodel string) error {
+	isExistBrand, err := c.CheckBrand(brandname)
+	if err != nil {
+		return err
+	}
+	if !isExistBrand {
+		return model.ErrBrandDoesntAlreadyExist
+	}
+
+	isExistModel, err := c.CheckModel(brandname, automodel)
+	if err != nil {
+		return err
+	}
+	if isExistModel {
+		return model.ErrAutomodelAlreadyExist
+	}
+
+	db := c.database
+	collBrand := db.Collection(collectionBrand)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	_, err = collBrand.UpdateOne(ctx,
+		bson.D{{"brandname", brandname}},
+		bson.M{"$push": bson.M{"automodels": automodel}},
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *Connector) CheckModel(brandname, automodel string) (bool, error) {

@@ -33,10 +33,10 @@ func NewRouter(core *core.Core) *mux.Router {
 	// /api/v1/brands
 	brandRouter := apiRouter.PathPrefix("/brands").Subrouter()
 	brandRouter.HandleFunc("/", hs.createBrandHandler).Methods(http.MethodPost)
-	brandRouter.HandleFunc("/{brand}", hs.deleteBrandHandler).Methods(http.MethodDelete)
+	brandRouter.HandleFunc("/{brandname}", hs.deleteBrandHandler).Methods(http.MethodDelete)
 
-	brandRouter.HandleFunc("/{brand}/models/{model}", hs.createModelHandler).Methods(http.MethodPost)
-	brandRouter.HandleFunc("/{brand}/models/{model}", hs.deleteModelHandler).Methods(http.MethodDelete)
+	brandRouter.HandleFunc("/{brandname}/models/{automodel}", hs.createModelHandler).Methods(http.MethodPost)
+	brandRouter.HandleFunc("/{brandname}/models/{automodel}", hs.deleteModelHandler).Methods(http.MethodDelete)
 
 	return majorRouter
 }
@@ -86,7 +86,7 @@ func (hs *handlerStore) createBrandHandler(w http.ResponseWriter, r *http.Reques
 }
 
 func (hs *handlerStore) deleteBrandHandler(w http.ResponseWriter, r *http.Request) {
-	brand := mux.Vars(r)["brand"]
+	brand := mux.Vars(r)["brandname"]
 
 	err := hs.core.Brand.DeleteBrand(brand)
 	if err != nil {
@@ -98,8 +98,16 @@ func (hs *handlerStore) deleteBrandHandler(w http.ResponseWriter, r *http.Reques
 }
 
 func (hs *handlerStore) createModelHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-	w.Write([]byte("createModelHandler isn't implemented"))
+	brandname := mux.Vars(r)["brandname"]
+	automodel := mux.Vars(r)["automodel"]
+
+	err := hs.core.Brand.CreateModel(brandname, automodel)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (hs *handlerStore) deleteModelHandler(w http.ResponseWriter, r *http.Request) {
