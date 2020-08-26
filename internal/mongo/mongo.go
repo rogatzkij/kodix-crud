@@ -342,7 +342,7 @@ func (c *Connector) CreateAuto(auto model.Auto) (uint, error) {
 		return 0, err
 	}
 
-	return 0, nil
+	return id, nil
 }
 
 func (c *Connector) GetAutoByID(id uint) (*model.Auto, error) {

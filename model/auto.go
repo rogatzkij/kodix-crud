@@ -18,10 +18,10 @@ func (as AutoStatus) Check() bool {
 }
 
 type Auto struct {
-	ID        uint       `json:"id" bson:"id"`               // Уникальный идентификатор
-	Brandname string     `json:"brandname" bson:"brandname"` // Бренд автомобиля
-	Automodel string     `json:"automodel" bson:"automodel"` // Модель автомобиля
-	Price     uint       `json:"price" bson:"price"`         // Цена автомобиля
-	Status    AutoStatus `json:"status" bson:"status"`       // Статус автомобиля
-	Mileage   uint       `json:"mileage" bson:"mileage"`     // Пробег автомобиля
+	ID        uint       `json:"id" bson:"id" jsonapi:"primary,autos"`                 // Уникальный идентификатор
+	Brandname string     `json:"brandname" bson:"brandname" jsonapi:"attr, brandname"` // Бренд автомобиля
+	Automodel string     `json:"automodel" bson:"automodel" jsonapi:"attr, automodel"` // Модель автомобиля
+	Price     uint       `json:"price" bson:"price" jsonapi:"attr, price"`             // Цена автомобиля
+	Status    AutoStatus `json:"status" bson:"status" jsonapi:"attr, status"`          // Статус автомобиля
+	Mileage   uint       `json:"mileage" bson:"mileage" jsonapi:"attr, mileage"`       // Пробег автомобиля
 }

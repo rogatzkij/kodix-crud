@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"github.com/google/jsonapi"
 	"github.com/gorilla/mux"
 	"github.com/rogatzkij/kodix-crud/internal/core"
 	"github.com/rogatzkij/kodix-crud/model"
@@ -23,6 +24,7 @@ func NewRouter(core *core.Core) *mux.Router {
 	majorRouter := mux.NewRouter()
 	majorRouter.StrictSlash(true)
 	majorRouter.Use(LogMiddleware)
+	majorRouter.Use(JsonapiMediaTypeMiddleware)
 
 	apiRouter := majorRouter.PathPrefix("/api/v1").Subrouter()
 
@@ -58,6 +60,13 @@ func LogMiddleware(h http.Handler) http.Handler {
 	})
 }
 
+func JsonapiMediaTypeMiddleware(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", jsonapi.MediaType)
+		h.ServeHTTP(w, r)
+	})
+}
+
 func (hs *handlerStore) readAutosHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var offset uint64 = 0
@@ -67,6 +76,11 @@ func (hs *handlerStore) readAutosHandler(w http.ResponseWriter, r *http.Request)
 		limit, err = strconv.ParseUint(param, 10, 64)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
+			jsonapi.MarshalErrors(w, []*jsonapi.ErrorObject{{
+				Title:  "Request Error",
+				Detail: err.Error(),
+				Status: strconv.Itoa(http.StatusBadRequest),
+			}})
 			return
 		}
 	}
@@ -75,6 +89,11 @@ func (hs *handlerStore) readAutosHandler(w http.ResponseWriter, r *http.Request)
 		offset, err = strconv.ParseUint(param, 10, 64)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
+			jsonapi.MarshalErrors(w, []*jsonapi.ErrorObject{{
+				Title:  "Request Error",
+				Detail: err.Error(),
+				Status: strconv.Itoa(http.StatusBadRequest),
+			}})
 			return
 		}
 	}
@@ -82,46 +101,65 @@ func (hs *handlerStore) readAutosHandler(w http.ResponseWriter, r *http.Request)
 	autos, err := hs.core.Auto.GetAutos(uint(limit), uint(offset))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		jsonapi.MarshalErrors(w, []*jsonapi.ErrorObject{{
+			Title:  "Request Error",
+			Detail: err.Error(),
+			Status: strconv.Itoa(http.StatusBadRequest),
+		}})
 		return
 	}
 
-	body, err := json.Marshal(autos)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+	autosPtr := make([]*model.Auto, len(autos))
+	for _, auto := range autos {
+		autosPtr = append(autosPtr, &auto)
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write(body)
+	err = jsonapi.MarshalPayload(w, autosPtr)
+	if err != nil {
+		log.Err(err).Msg("ошибка при записи тела")
+	}
 }
 
 func (hs *handlerStore) readAutoByIDHandler(w http.ResponseWriter, r *http.Request) {
 	autoID, err := strconv.ParseUint(mux.Vars(r)["auto_id"], 10, 64)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		jsonapi.MarshalErrors(w, []*jsonapi.ErrorObject{{
+			Title:  "Request Error",
+			Detail: err.Error(),
+			Status: strconv.Itoa(http.StatusBadRequest),
+		}})
 		return
 	}
 
 	auto, err := hs.core.Auto.GetAutoByID(uint(autoID))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	body, err := json.Marshal(auto)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		jsonapi.MarshalErrors(w, []*jsonapi.ErrorObject{{
+			Title:  "Request Error",
+			Detail: err.Error(),
+			Status: strconv.Itoa(http.StatusBadRequest),
+		}})
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write(body)
+	err = jsonapi.MarshalPayload(w, auto)
+	if err != nil {
+		log.Err(err).Msg("ошибка при записи тела")
+	}
 }
 
 func (hs *handlerStore) createAutoHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		jsonapi.MarshalErrors(w, []*jsonapi.ErrorObject{{
+			Title:  "Request Error",
+			Detail: err.Error(),
+			Status: strconv.Itoa(http.StatusBadRequest),
+		}})
 		return
 	}
 	defer r.Body.Close()
@@ -130,28 +168,58 @@ func (hs *handlerStore) createAutoHandler(w http.ResponseWriter, r *http.Request
 	err = json.Unmarshal(body, auto)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		jsonapi.MarshalErrors(w, []*jsonapi.ErrorObject{{
+			Title:  "Request Error",
+			Detail: err.Error(),
+			Status: strconv.Itoa(http.StatusBadRequest),
+		}})
 		return
 	}
 
-	_, err = hs.core.Auto.CreateAuto(*auto)
+	id, err := hs.core.Auto.CreateAuto(*auto)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		jsonapi.MarshalErrors(w, []*jsonapi.ErrorObject{{
+			Title:  "Request Error",
+			Detail: err.Error(),
+			Status: strconv.Itoa(http.StatusBadRequest),
+		}})
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	response := struct {
+		ID uint `jsonapi:"primary,autos"`
+	}{
+		ID: id,
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	err = jsonapi.MarshalPayload(w, response)
+	if err != nil {
+		log.Err(err).Msg("ошибка при записи тела")
+	}
 }
 
 func (hs *handlerStore) updateAutoHandler(w http.ResponseWriter, r *http.Request) {
 	autoID, err := strconv.ParseUint(mux.Vars(r)["auto_id"], 10, 64)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		jsonapi.MarshalErrors(w, []*jsonapi.ErrorObject{{
+			Title:  "Request Error",
+			Detail: err.Error(),
+			Status: strconv.Itoa(http.StatusBadRequest),
+		}})
 		return
 	}
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		jsonapi.MarshalErrors(w, []*jsonapi.ErrorObject{{
+			Title:  "Request Error",
+			Detail: err.Error(),
+			Status: strconv.Itoa(http.StatusBadRequest),
+		}})
 		return
 	}
 	defer r.Body.Close()
@@ -160,12 +228,22 @@ func (hs *handlerStore) updateAutoHandler(w http.ResponseWriter, r *http.Request
 	err = json.Unmarshal(body, auto)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		jsonapi.MarshalErrors(w, []*jsonapi.ErrorObject{{
+			Title:  "Request Error",
+			Detail: err.Error(),
+			Status: strconv.Itoa(http.StatusBadRequest),
+		}})
 		return
 	}
 
 	err = hs.core.Auto.UpdateAutoByID(uint(autoID), *auto)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		jsonapi.MarshalErrors(w, []*jsonapi.ErrorObject{{
+			Title:  "Request Error",
+			Detail: err.Error(),
+			Status: strconv.Itoa(http.StatusBadRequest),
+		}})
 		return
 	}
 
@@ -176,12 +254,22 @@ func (hs *handlerStore) deleteAutoHandler(w http.ResponseWriter, r *http.Request
 	autoID, err := strconv.ParseUint(mux.Vars(r)["auto_id"], 10, 64)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		jsonapi.MarshalErrors(w, []*jsonapi.ErrorObject{{
+			Title:  "Request Error",
+			Detail: err.Error(),
+			Status: strconv.Itoa(http.StatusBadRequest),
+		}})
 		return
 	}
 
 	err = hs.core.Auto.DeleteAutoByID(uint(autoID))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		jsonapi.MarshalErrors(w, []*jsonapi.ErrorObject{{
+			Title:  "Request Error",
+			Detail: err.Error(),
+			Status: strconv.Itoa(http.StatusBadRequest),
+		}})
 		return
 	}
 
@@ -192,6 +280,11 @@ func (hs *handlerStore) createBrandHandler(w http.ResponseWriter, r *http.Reques
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		jsonapi.MarshalErrors(w, []*jsonapi.ErrorObject{{
+			Title:  "Request Error",
+			Detail: err.Error(),
+			Status: strconv.Itoa(http.StatusBadRequest),
+		}})
 		return
 	}
 	defer r.Body.Close()
@@ -200,16 +293,26 @@ func (hs *handlerStore) createBrandHandler(w http.ResponseWriter, r *http.Reques
 	err = json.Unmarshal(body, brand)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		jsonapi.MarshalErrors(w, []*jsonapi.ErrorObject{{
+			Title:  "Request Error",
+			Detail: err.Error(),
+			Status: strconv.Itoa(http.StatusBadRequest),
+		}})
 		return
 	}
 
 	err = hs.core.Brand.CreateBrand(*brand)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		jsonapi.MarshalErrors(w, []*jsonapi.ErrorObject{{
+			Title:  "Request Error",
+			Detail: err.Error(),
+			Status: strconv.Itoa(http.StatusBadRequest),
+		}})
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusCreated)
 }
 
 func (hs *handlerStore) deleteBrandHandler(w http.ResponseWriter, r *http.Request) {
@@ -218,6 +321,11 @@ func (hs *handlerStore) deleteBrandHandler(w http.ResponseWriter, r *http.Reques
 	err := hs.core.Brand.DeleteBrand(brand)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		jsonapi.MarshalErrors(w, []*jsonapi.ErrorObject{{
+			Title:  "Request Error",
+			Detail: err.Error(),
+			Status: strconv.Itoa(http.StatusBadRequest),
+		}})
 		return
 	}
 
@@ -231,10 +339,15 @@ func (hs *handlerStore) createModelHandler(w http.ResponseWriter, r *http.Reques
 	err := hs.core.Brand.CreateModel(brandname, automodel)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		jsonapi.MarshalErrors(w, []*jsonapi.ErrorObject{{
+			Title:  "Request Error",
+			Detail: err.Error(),
+			Status: strconv.Itoa(http.StatusBadRequest),
+		}})
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusCreated)
 }
 
 func (hs *handlerStore) deleteModelHandler(w http.ResponseWriter, r *http.Request) {
@@ -244,6 +357,11 @@ func (hs *handlerStore) deleteModelHandler(w http.ResponseWriter, r *http.Reques
 	err := hs.core.Brand.DeleteModel(brandname, automodel)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		jsonapi.MarshalErrors(w, []*jsonapi.ErrorObject{{
+			Title:  "Request Error",
+			Detail: err.Error(),
+			Status: strconv.Itoa(http.StatusBadRequest),
+		}})
 		return
 	}
 
