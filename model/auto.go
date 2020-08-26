@@ -9,10 +9,10 @@ const (
 )
 
 type Auto struct {
-	ID      uint       `json:"id"`      // Уникальный идентификатор
-	Brand   string     `json:"brand"`   // Бренд автомобиля
-	Model   string     `json:"model"`   // Модель автомобиля
-	Price   uint       `json:"price"`   // Цена автомобиля
-	Status  AutoStatus `json:"status"`  // Статус автомобиля
-	Mileage uint       `json:"mileage"` // Пробег автомобиля
+	ID        uint       `json:"id"`        // Уникальный идентификатор
+	Brandname string     `json:"brandname"` // Бренд автомобиля
+	Model     string     `json:"model"`     // Модель автомобиля
+	Price     uint       `json:"price"`     // Цена автомобиля
+	Status    AutoStatus `json:"status"`    // Статус автомобиля
+	Mileage   uint       `json:"mileage"`   // Пробег автомобиля
 }

@@ -1,6 +1,6 @@
 package model
 
 type Brand struct {
-	Name   string   `json:"name"`
-	Models []string `json:"models"`
+	Brandname string   `json:"brandname" bson:"brandname"`
+	Models    []string `json:"models omitempty" bson:"models"`
 }

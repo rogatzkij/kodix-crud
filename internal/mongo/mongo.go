@@ -58,7 +58,7 @@ func (c *Connector) CreateBrand(brand string) error {
 	panic("implement me")
 }
 
-func (c *Connector) CheckBrand(brand string) (bool, error) {
+func (c *Connector) CheckBrand(brandname string) (bool, error) {
 	if c.client == nil {
 		if err := c.Connect(); err != nil {
 			return false, err
@@ -71,7 +71,7 @@ func (c *Connector) CheckBrand(brand string) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	sRes := collBrand.FindOne(ctx, bson.D{{"brand", brand}})
+	sRes := collBrand.FindOne(ctx, bson.D{{"brandname", brandname}})
 	switch sRes.Err() {
 	case nil:
 		return true, nil
