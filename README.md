@@ -16,10 +16,16 @@
 
 ### Создание бренда
 
-~~~sh
+~~~shell script
 curl --location --request POST '127.0.0.1:8080/api/v1/brands/' \
 --header 'Content-Type: application/json' \
 --data-raw '{
     "brandname": "kia"
 }'
+~~~
+
+### Удаление бренда
+Внимание: При удалении бренда не будут удалены машины этого бренда.
+~~~shell script
+curl --location --request DELETE '127.0.0.1:8080/api/v1/brands/kia'
 ~~~
