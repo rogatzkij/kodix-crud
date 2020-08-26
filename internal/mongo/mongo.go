@@ -54,8 +54,27 @@ func (c *Connector) Close() error {
 	return c.client.Disconnect(ctx)
 }
 
-func (c *Connector) CreateBrand(brand string) error {
-	panic("implement me")
+func (c *Connector) CreateBrand(brand model.Brand) error {
+	isExist, err := c.CheckBrand(brand.Brandname)
+	if err != nil {
+		return err
+	}
+	if isExist {
+		return model.ErrBrandAlreadyExist
+	}
+
+	db := c.database
+	collBrand := db.Collection(collectionBrand)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	_, err = collBrand.InsertOne(ctx, brand)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *Connector) CheckBrand(brandname string) (bool, error) {
