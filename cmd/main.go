@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/rogatzkij/kodix-crud/config"
 	"github.com/rogatzkij/kodix-crud/internal/core"
-	"github.com/rogatzkij/kodix-crud/internal/handel"
+	"github.com/rogatzkij/kodix-crud/internal/handler"
 	"github.com/rogatzkij/kodix-crud/internal/mongo"
 	"github.com/rs/zerolog/log"
 	"net/http"
@@ -32,13 +32,10 @@ func main() {
 		Brand: mainConnector,
 	}
 
-	// Создаем роутер
-	mainRouter := handel.NewRouter(mainCore)
-
 	// Создаем и запускаем сервер
 	srv := http.Server{
 		Addr:    fmt.Sprintf(":%d", mainConfig.Port),
-		Handler: mainRouter,
+		Handler: handler.NewRouter(mainCore), // Создаем роутер
 	}
 
 	log.Info().Msg("Сервис запускается")
