@@ -6,7 +6,7 @@ type Brand interface {
 	CreateBrand(brand model.Brand) error
 	DeleteBrand(brandname string) error
 	CheckBrand(brandname string) (bool, error)
-	CreateModel(brandname, model string) error
-	CheckModel(brandname, model string) (bool, error)
-	DeleteModel(brandname, model string) error
+	CreateModel(brandname, automodel string) error
+	CheckModel(brandname, automodel string) (bool, error)
+	DeleteModel(brandname, automodel string) error
 }
