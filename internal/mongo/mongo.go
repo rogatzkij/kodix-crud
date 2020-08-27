@@ -70,7 +70,7 @@ func (c *Connector) GetAutos(limit, offset uint) ([]model.Auto, error) {
 	opts.SetSkip(int64(offset))
 	opts.SetSort(bson.D{{"_id", 1}})
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	var autos []model.Auto
@@ -80,7 +80,7 @@ func (c *Connector) GetAutos(limit, offset uint) ([]model.Auto, error) {
 		return autos, err
 	}
 
-	ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	for cursor.Next(ctx) {
@@ -333,7 +333,7 @@ func (c *Connector) CreateAuto(auto model.Auto) (uint, error) {
 	}
 
 	db := c.database
-	collBrand := db.Collection(collectionAuto)
+	collAuto := db.Collection(collectionAuto)
 
 	id, _ := c.GetNextAutoID()
 	auto.ID = id
@@ -341,7 +341,7 @@ func (c *Connector) CreateAuto(auto model.Auto) (uint, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	_, err = collBrand.InsertOne(ctx, auto)
+	_, err = collAuto.InsertOne(ctx, auto)
 	if err != nil {
 		return 0, err
 	}
@@ -358,12 +358,12 @@ func (c *Connector) GetAutoByID(id uint) (*model.Auto, error) {
 	}
 
 	db := c.database
-	collBrand := db.Collection(collectionAuto)
+	collAuto := db.Collection(collectionAuto)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	result := collBrand.FindOne(ctx, bson.M{"id": id})
+	result := collAuto.FindOne(ctx, bson.M{"id": id})
 	if result.Err() != nil {
 		return nil, result.Err()
 	}
@@ -399,14 +399,14 @@ func (c *Connector) UpdateAutoByID(id uint, auto model.Auto) error {
 	}
 
 	db := c.database
-	collBrand := db.Collection(collectionAuto)
+	collAuto := db.Collection(collectionAuto)
 
 	auto.ID = id
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	_, err = collBrand.UpdateOne(ctx, auto, options.Update().SetUpsert(true))
+	_, err = collAuto.UpdateOne(ctx, auto, options.Update().SetUpsert(true))
 	if err != nil {
 		return err
 	}
@@ -447,10 +447,10 @@ func (c *Connector) GetNextAutoID() (uint, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	col := c.database.Collection(collectionCounter)
+	collCounter := c.database.Collection(collectionCounter)
 	opts := options.FindOneAndUpdate().SetUpsert(true)
 
-	result := col.FindOneAndUpdate(
+	result := collCounter.FindOneAndUpdate(
 		ctx,
 		bson.M{"_id": "auto_id"},
 		bson.M{"$inc": bson.M{"counter": 1}},
