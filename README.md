@@ -13,6 +13,8 @@
 ## О реализации
 
 * при составлении структуры проекта опирался на [Standard Go Project Layout](https://github.com/golang-standards/project-layout)
+* в сервисе встречаются странные на первый взгляд названия полей `brandname` (т.к. часто используется переменная `brand`) и `automodel` (т.к. `model` совпадает с названием одного из пакетов)
+* взаимодействие с БД осуществляется с помощью объектов, которые реализует интерфейсы. Если в будущем не планируется переход на другую БД, то интерфейсы в данном случае могут быть избыточными.
 
 ### Структура проекта
 ~~~
@@ -25,19 +27,19 @@
 │   ├── contract        - пакет с интерфейсами по работе с данными
 │   │   ├── auto.go  
 │   │   └── brand.go  
-│   ├── core
-│   │   └── core.go     - модуль с логикой работы с данными
-│   ├── handler
-│   │   └── handler.go  - http ручки и миделвары
-│   └── mongo
-│       └── mongo.go    - пакет, реализующий 
+│   ├── core            - пакет с логикой работы с данными
+│   │   └── core.go     
+│   ├── handler         - http ручки и миделвары
+│   │   └── handler.go  
+│   └── mongo           - пакет, реализующий взаимодействие с БД
+│       └── mongo.go    
 ├── model
-│   ├── auto.go  - структура записи автомобиля
-│   ├── brand.go - структура записи бренда
-│   └── error.go - возможные ошибки
+│   ├── auto.go     - структура записи автомобиля
+│   ├── brand.go    - структура записи бренда
+│   └── error.go    - возможные ошибки
 ├── go.mod
 ├── go.sum
-└── README.md - ты здесь :)
+└── README.md       - ты здесь :)
 ~~~
 ## О работе сервиса
 
@@ -81,3 +83,52 @@ curl --location --request POST '127.0.0.1:8080/api/v1/brands/lada/models/niva'
 ~~~shell script
 curl --location --request DELETE '127.0.0.1:8080/api/v1/brands/lada/models/niva'
 ~~~
+
+### Получение записи об одном автомобиле
+~~~shell script
+curl --location --request GET '127.0.0.1:8080/api/v1/autos/4'
+~~~
+
+### Получение записи о нескольких автомобилях
+Для пагинации в запросе указывается GET-параметры `limit` (по умолчанию 10) и `offset` (по умолчанию 0).
+
+~~~shell script
+curl --location --request GET '127.0.0.1:8080/api/v1/autos/?offset=0&limit=3' 
+~~~
+### Создание автомобиля
+~~~shell script
+curl --location --request POST '127.0.0.1:8080/api/v1/autos/' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "brandname": "lada", 
+    "automodel": "niva",
+    "price": 1000,
+    "status": "stock",
+    "mileage": 5000
+}'
+~~~
+### Изменение автомобиля
+При изменении должны быть переданы все поля.
+~~~shell script
+curl --location --request PUT '127.0.0.1:8080/api/v1/autos/4' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "brandname": "lada", 
+    "automodel": "niva",
+    "price": 1000,
+    "status": "sold out",
+    "mileage": 7000
+}'
+~~~
+### Удаление автомобиля
+~~~shell script
+curl --location --request DELETE '127.0.0.1:8080/api/v1/autos/4'
+~~~
+
+## Что можно доработать
+* Сделать более точное соответствие `jsonapi` с указанием ссылок и метаинформации 
+* Проставить индексы в БД
+* Выдавать в API сообщения об ошибках, не содержащие сведенья о системе
+* Добавить автотестов с моками монги
+* Сделать авторизацию (хотя бы `basic`) и роли пользователям
+* Собирать docker контейнер  (3 стадии: prebuild/build/service)
